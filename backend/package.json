@@ -13,6 +13,7 @@
     "purge": "node src/database/purge.js",
     "db:clean": "node src/database/purge.js",
     "db:setup": "node src/database/migrate.js && node src/database/seed.js",
+    "db:push-cloud": "node src/database/restoreToNeon.js",
     "test:m1": "node src/tests/runTests.js",
     "test:m2": "node src/tests/runM2Tests.js",
     "test:m3": "node src/tests/runM3Tests.js",

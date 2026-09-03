@@ -7,12 +7,19 @@ const { Pool } = pg;
 export let isDbConnected = false;
 export let dbError = null;
 
+const isCloudDb = 
+  env.DATABASE_URL.includes('neon.tech') || 
+  env.DATABASE_URL.includes('sslmode') || 
+  env.DATABASE_URL.includes('render.com') ||
+  env.DATABASE_URL.includes('aws') || 
+  env.DB_SSL;
+
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  ssl: env.DB_SSL ? { rejectUnauthorized: false } : false,
+  ssl: isCloudDb ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
 });
 
 pool.on('error', (err) => {
@@ -21,31 +28,42 @@ pool.on('error', (err) => {
   dbError = err.message;
 });
 
-export const testDbConnection = async () => {
-  try {
-    const client = await pool.connect();
-    const res = await client.query('SELECT NOW() as current_time');
-    client.release();
-    isDbConnected = true;
-    dbError = null;
-    logger.info('PostgreSQL connected successfully', { time: res.rows[0].current_time });
-    return true;
-  } catch (err) {
-    isDbConnected = false;
-    dbError = err.message;
-    logger.warn(`PostgreSQL connection failed (${err.message}). In-memory fallback will be active if needed.`);
-    return false;
+export const testDbConnection = async (retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const client = await pool.connect();
+      const res = await client.query('SELECT NOW() as current_time');
+      client.release();
+      isDbConnected = true;
+      dbError = null;
+      logger.info('PostgreSQL connected successfully', { time: res.rows[0].current_time });
+      return true;
+    } catch (err) {
+      isDbConnected = false;
+      dbError = err.message;
+      logger.warn(`PostgreSQL connection attempt ${i + 1}/${retries} failed: ${err.message}`);
+      if (i < retries - 1) {
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
   }
+  return false;
 };
 
 // Safe query execution wrapper
 export const query = async (text, params) => {
-  if (isDbConnected) {
+  try {
     const start = Date.now();
     const res = await pool.query(text, params);
+    isDbConnected = true;
+    dbError = null;
     const duration = Date.now() - start;
     logger.debug('Executed PostgreSQL query', { text: text.substring(0, 100), duration, rows: res.rowCount });
     return res;
+  } catch (err) {
+    if (!isDbConnected && dbError) {
+      throw new Error(`Database connection failure: ${dbError}`);
+    }
+    throw err;
   }
-  throw new Error(`Database is not connected: ${dbError || 'Unknown connection failure'}`);
 };
