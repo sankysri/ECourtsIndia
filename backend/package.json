@@ -1,0 +1,41 @@
+{
+  "name": "ecourts-india-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Indian Court Data Ingestion & Intelligence Platform",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "migrate": "node src/database/migrate.js",
+    "seed": "node src/database/seed.js",
+    "purge": "node src/database/purge.js",
+    "db:clean": "node src/database/purge.js",
+    "db:setup": "node src/database/migrate.js && node src/database/seed.js",
+    "test:m1": "node src/tests/runTests.js",
+    "test:m2": "node src/tests/runM2Tests.js",
+    "test:m3": "node src/tests/runM3Tests.js",
+    "test:m4": "node src/tests/runM4Tests.js",
+    "test:m5": "node src/tests/runM5Tests.js",
+    "test:m6": "node src/tests/runM6Tests.js",
+    "test:rbac": "node src/tests/runRBACTests.js",
+    "test": "node src/tests/runTests.js && node src/tests/runM2Tests.js && node src/tests/runM3Tests.js && node src/tests/runM4Tests.js && node src/tests/runM5Tests.js && node src/tests/runM6Tests.js && node src/tests/runRBACTests.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "bullmq": "^5.41.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "pg": "^8.13.3",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
