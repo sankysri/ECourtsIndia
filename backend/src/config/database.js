@@ -7,15 +7,25 @@ const { Pool } = pg;
 export let isDbConnected = false;
 export let dbError = null;
 
+// Automatically normalize Neon pooled URL and parameters to direct endpoint
+let normalizedDbUrl = env.DATABASE_URL;
+if (normalizedDbUrl && typeof normalizedDbUrl === 'string') {
+  normalizedDbUrl = normalizedDbUrl.replace('-pooler.', '.');
+  normalizedDbUrl = normalizedDbUrl.replace(/[?&]channel_binding=[^&]+/g, '');
+  if (normalizedDbUrl.includes('&') && !normalizedDbUrl.includes('?')) {
+    normalizedDbUrl = normalizedDbUrl.replace('&', '?');
+  }
+}
+
 const isCloudDb = 
-  env.DATABASE_URL.includes('neon.tech') || 
-  env.DATABASE_URL.includes('sslmode') || 
-  env.DATABASE_URL.includes('render.com') ||
-  env.DATABASE_URL.includes('aws') || 
+  normalizedDbUrl.includes('neon.tech') || 
+  normalizedDbUrl.includes('sslmode') || 
+  normalizedDbUrl.includes('render.com') ||
+  normalizedDbUrl.includes('aws') || 
   env.DB_SSL;
 
 export const pool = new Pool({
-  connectionString: env.DATABASE_URL,
+  connectionString: normalizedDbUrl,
   ssl: isCloudDb ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
