@@ -23,7 +23,17 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: [env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:3000'],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, server-to-server) or wildcard
+      if (!origin || env.FRONTEND_URL === '*' || env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+      const allowed = [env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:3000'];
+      if (allowed.includes(origin) || origin.endsWith('.onrender.com') || origin.endsWith('.vercel.app') || origin.endsWith('.netlify.app')) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

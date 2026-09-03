@@ -15,27 +15,33 @@ const startServer = async () => {
   logger.info('Starting Indian Court Data Ingestion & Intelligence Platform (Backend)...');
 
   try {
-    // 1. Database connection & migrations
-    await testDbConnection();
-    await runMigrations();
-    await seedDatabase();
-
-    // 2. Redis & Queue initialization
-    await testRedisConnection();
-    initQueues();
-    initSampleWorkers();
-    initCourtSyncWorker();
-    initDiscoveryWorker();
-    initCaseDetailWorker();
-
-    // 3. Start HTTP Listener
-    const server = app.listen(env.PORT, () => {
+    // 1. Start HTTP Listener immediately on 0.0.0.0 for instant cloud port binding
+    const server = app.listen(env.PORT, '0.0.0.0', () => {
       logger.info(`=======================================================`);
       logger.info(`NyayaData Intelligence Backend running on port ${env.PORT}`);
-      logger.info(`Health Endpoint: http://localhost:${env.PORT}/health`);
+      logger.info(`Health Endpoint: http://0.0.0.0:${env.PORT}/health`);
       logger.info(`Environment:     ${env.NODE_ENV}`);
       logger.info(`=======================================================`);
     });
+
+    // 2. Initialize database, migrations, seeds, Redis and workers in background
+    (async () => {
+      try {
+        await testDbConnection();
+        await runMigrations();
+        await seedDatabase();
+
+        await testRedisConnection();
+        initQueues();
+        initSampleWorkers();
+        initCourtSyncWorker();
+        initDiscoveryWorker();
+        initCaseDetailWorker();
+        logger.info('System initialization complete (DB, Migrations, Seeds, Workers active).');
+      } catch (initErr) {
+        logger.error('Non-fatal error during background initialization', initErr);
+      }
+    })();
 
     // Graceful Shutdown
     const shutdown = async (signal) => {
